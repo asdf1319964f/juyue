@@ -6,7 +6,7 @@
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.3";
+JKit.ver = "20260914.4";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -389,6 +389,22 @@ JKit.supjav.buttons = function (html) {
   }
   return out;
 };
+JKit.supjav.pickM3u8 = function (html) {
+  html = JKit.str(html);
+  var all = html.match(/https?:[^"'\\\s<>]+?\.m3u8[^"'\\\s<>]*/g) || [];
+  var i, u, best = "";
+  for (i = 0; i < all.length; i++) {
+    u = all[i].replace(/\\+/g, "");
+    if (/turbosplayer\.com/i.test(u) && /master\.m3u8/i.test(u)) return u;
+    if (/turbosplayer\.com/i.test(u) && !best) best = u;
+  }
+  if (best) return best;
+  for (i = 0; i < all.length; i++) {
+    u = all[i].replace(/\\+/g, "");
+    if (/master\.m3u8/i.test(u)) return u;
+  }
+  return all.length ? all[0].replace(/\\+/g, "") : "";
+};
 JKit.supjav.resolve = function (dataLink, ua) {
   dataLink = JKit.str(dataLink);
   ua = JKit.str(ua);
@@ -402,8 +418,7 @@ JKit.supjav.resolve = function (dataLink, ua) {
   var html, m, script, packed, link;
   if (/turbovid|emturbovid/.test(location)) {
     html = JKit.get(location, { ua: ua, referer: referer });
-    m = html.match(/https?:[^"'<\s]+?\.m3u8[^"'<\s]*/);
-    if (m) play = m[0];
+    play = JKit.supjav.pickM3u8(html);
   } else if (/cindyeyefinal|fc2stream/.test(location)) {
     html = JKit.get(location, { ua: ua, referer: referer });
     script = html.match(/eval([\s\S]+?)<\/script/);
@@ -453,7 +468,7 @@ JKit.supjav.playJson = function (detailUrl, ua, ck) {
     if (!play) continue;
     urls.push(play);
     names.push(it.name);
-    headers.push({ Referer: "https://supjav.com" });
+    headers.push({ Referer: "" });
   }
   if (!urls.length) return JKit.str(detailUrl) + "#嗅探";
   return { urls: urls, names: names, headers: headers };
