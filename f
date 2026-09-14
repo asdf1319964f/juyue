@@ -1,16 +1,12 @@
-/* juyue_kit 20260914.1
-   从 mistywater/hiker/f 抽出轮播、二级壳、筛选、着色、player_aaaa，
-   改成可 require 的本地/远程模块。禁止 eval(lunbo)、箭头、log、读 input。
-
-   规则里：
-     require(parse.库路径);
-     JKit.abs(u, host);
-     JKit.filters(d, html, opt);
-     return JKit.detailObj(...);
+/* juyue_kit 20260914.2
+   公共：着色/轮播/筛选/二级/aaaa
+   站点：JKit.supjav.playJson
+   缺啥就在本文件加 JKit.站点名.方法，规则 require 后调用。
+   禁止 eval 远程字符串、箭头、log、读 input。
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.1";
+JKit.ver = "20260914.2";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -243,18 +239,9 @@ JKit.filters = function (d, html, opt) {
   return d;
 };
 
-JKit.filterUrl = function (host, fallback) {
+JKit.filterUrl = function (key, fallback) {
   var u = "";
-  try { u = getMyVar((host || "") + "flturl", "") || ""; } catch (e0) { u = ""; }
-  if (!u) {
-    try { u = getMyVar((host || "") + "flturl".replace("flturl", "flt") + "url", "") || ""; } catch (e1) { u = ""; }
-  }
-  try {
-    if (!u) u = getMyVar(JKit.str(host) + "flturl", "") || "";
-  } catch (e2) {}
-  try {
-    if (!u) u = getMyVar(JKit.str(host) + "flt" + "url", "") || "";
-  } catch (e3) {}
+  try { u = getMyVar(JKit.str(key) + "url", "") || ""; } catch (e0) { u = ""; }
   return u || fallback || "";
 };
 
@@ -355,9 +342,119 @@ JKit.get = function (url, opt) {
   if (!headers["User-Agent"]) headers["User-Agent"] = opt.ua || "Mozilla/5.0";
   if (!headers["Accept-Encoding"]) headers["Accept-Encoding"] = "identity";
   if (opt.referer && !headers.Referer) headers.Referer = opt.referer;
+  if (opt.cookie && !headers.Cookie) headers.Cookie = opt.cookie;
   try {
     return JKit.str(request(url, { headers: headers, timeout: opt.timeout || 15000 }));
   } catch (e0) {
     return "";
   }
+};
+
+/* ---------- Supjav ---------- */
+JKit.supjav = JKit.supjav || {};
+JKit.supjav.host = "https://supjav.com";
+JKit.supjav.loc = function (api, ref, ua) {
+  try {
+    var raw = fetch(api, {
+      headers: { Referer: ref, "User-Agent": ua, "Accept-Encoding": "identity" },
+      onlyHeaders: true,
+      timeout: 15000
+    });
+    var j = JSON.parse(raw);
+    return JKit.str((j && j.url) || "").replace(/#.*/, "");
+  } catch (e0) {
+    return "";
+  }
+};
+JKit.supjav.buttons = function (html) {
+  html = JKit.str(html);
+  var items = [];
+  try { items = pdfa(html, ".btns&&.btnst&&a") || []; } catch (e0) { items = []; }
+  var out = [];
+  var i, btn, name, link;
+  for (i = 0; i < items.length; i++) {
+    btn = items[i];
+    try { name = pdfh(btn, "Text"); } catch (e1) { name = ""; }
+    try { link = pdfh(btn, "a&&data-link"); } catch (e2) { link = ""; }
+    name = JKit.str(name).replace(/^\s+|\s+$/g, "");
+    link = JKit.str(link);
+    if (!link || !name || name === "SERVER :") continue;
+    out.push({ name: name, link: link });
+  }
+  if (!out.length) {
+    var iframe = "";
+    try { iframe = pdfh(html, "#dz_video iframe&&src"); } catch (e3) { iframe = ""; }
+    var m = JKit.str(iframe).match(/l=([a-f0-9]+)/i);
+    if (m && m[1]) out.push({ name: "默认", link: m[1] });
+  }
+  return out;
+};
+JKit.supjav.resolve = function (dataLink, ua) {
+  dataLink = JKit.str(dataLink);
+  ua = JKit.str(ua);
+  if (!dataLink) return "";
+  var id = dataLink.split("").reverse().join("");
+  var api = "https://lk1.supremejav.com/supjav.php?c=" + id;
+  var referer = "https://lk1.supremejav.com/supjav.php?l=" + dataLink;
+  var location = JKit.supjav.loc(api, referer, ua);
+  if (!location) return "";
+  var play = "";
+  var html, m, script, packed, link;
+  if (/turbovid|emturbovid/.test(location)) {
+    html = JKit.get(location, { ua: ua, referer: referer });
+    m = html.match(/https?:[^"'<\s]+?\.m3u8[^"'<\s]*/);
+    if (m) play = m[0];
+  } else if (/cindyeyefinal|fc2stream/.test(location)) {
+    html = JKit.get(location, { ua: ua, referer: referer });
+    script = html.match(/eval([\s\S]+?)<\/script/);
+    if (script) {
+      try {
+        packed = eval(script[1]);
+        link = JKit.str(packed).match(/var links[^;]+/);
+        if (link) {
+          eval(link[0]);
+          play = links.hls4 ? ("https://xenolyzb.com" + links.hls4) : (links.hls3 || links.hls2 || "");
+        }
+      } catch (e4) { play = ""; }
+    }
+  } else if (/streamtape/.test(location)) {
+    html = JKit.get(location, { ua: ua, referer: referer });
+    var pattern = html.match(/\('#(.*)'\)/);
+    if (pattern) {
+      try {
+        var srcMatch = html.match(new RegExp("'" + pattern[1] + ".*?=([^;]+)"));
+        if (srcMatch) {
+          eval("var srclink = " + srcMatch[1]);
+          play = JKit.supjav.loc("https:" + srclink + "&stream=1", location, ua);
+        }
+      } catch (e5) { play = ""; }
+    }
+  } else if (/voe/.test(location)) {
+    return location + "#嗅探";
+  }
+  play = JKit.str(play);
+  if (play.indexOf("http") === 0) return play;
+  return "";
+};
+JKit.supjav.playJson = function (detailUrl, ua, ck) {
+  var html = JKit.get(detailUrl, { ua: ua, cookie: ck, referer: "https://supjav.com/" });
+  if (!html) return "toast://详情加载失败";
+  if (html.indexOf("Just a moment") > -1 || html.indexOf("请稍候") > -1) {
+    return "toast://需要先回首页过盾";
+  }
+  var btns = JKit.supjav.buttons(html);
+  var urls = [];
+  var names = [];
+  var headers = [];
+  var i, it, play;
+  for (i = 0; i < btns.length; i++) {
+    it = btns[i];
+    play = JKit.supjav.resolve(it.link, ua);
+    if (!play) continue;
+    urls.push(play);
+    names.push(it.name);
+    headers.push({ Referer: "https://supjav.com" });
+  }
+  if (!urls.length) return JKit.str(detailUrl) + "#嗅探";
+  return { urls: urls, names: names, headers: headers };
 };
