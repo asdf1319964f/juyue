@@ -104,9 +104,6 @@ function supjavResolve(dataLink, ua) {
     return location + '#嗅探';
   }
   play = String(play || '');
-  if (play.indexOf('http') === 0 && play.indexOf('.m3u8') > -1) {
-    return play + ';{Referer@https://supjav.com}';
-  }
   if (play.indexOf('http') === 0) return play;
   return '';
 }
@@ -120,6 +117,7 @@ function supjavPlayJson(detailUrl, ua, ck) {
   var btns = supjavButtons(html);
   var urls = [];
   var names = [];
+  var headers = [];
   var i, it, play;
   for (i = 0; i < btns.length; i++) {
     it = btns[i];
@@ -127,7 +125,8 @@ function supjavPlayJson(detailUrl, ua, ck) {
     if (!play) continue;
     urls.push(play);
     names.push(it.name);
+    headers.push({ Referer: 'https://supjav.com' });
   }
   if (!urls.length) return String(detailUrl || '') + '#嗅探';
-  return { urls: urls, names: names };
+  return { urls: urls, names: names, headers: headers };
 }
