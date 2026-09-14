@@ -6,7 +6,7 @@
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.5";
+JKit.ver = "20260914.6";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -474,6 +474,30 @@ JKit.supjav.playJson = function (detailUrl, ua, ck) {
 
 function kitSupjavPlay(detailUrl, ua, ck) {
   return JKit.supjav.playJson(detailUrl, ua, ck);
+}
+
+/* ---------- MemoJav ---------- */
+JKit.memojav = JKit.memojav || {};
+JKit.memojav.host = "https://memojav.org";
+JKit.memojav.cdn = "https://video10.memojav.net";
+JKit.memojav.idOf = function (s) {
+  s = JKit.str(s);
+  if (!s) return "";
+  s = s.replace(/[?#].*$/, "");
+  var m = s.match(/\/(?:embed|video)\/([^\/\s]+)/i);
+  if (m) return m[1];
+  if (s.indexOf("http") !== 0 && s.indexOf("/") < 0) return s;
+  var parts = s.split("/");
+  return parts.length ? parts[parts.length - 1] : "";
+};
+JKit.memojav.play = function (idOrUrl) {
+  var id = JKit.memojav.idOf(idOrUrl);
+  if (!id) return "toast://未找到视频ID";
+  return JKit.memojav.cdn + "/stream/" + id + "/master.m3u8";
+};
+
+function kitMemojavPlay(idOrUrl) {
+  return JKit.memojav.play(idOrUrl);
 }
 
 try {
