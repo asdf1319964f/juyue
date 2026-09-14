@@ -1,36 +1,17 @@
-/* juyue_kit 20260914.2
+/* juyue_kit 20260914.7
    公共：着色/轮播/筛选/二级/aaaa
-   站点：JKit.supjav.playJson
+   站点：JKit.supjav.playJson / JKit.memojav.play / JKit.jm.pics
    缺啥就在本文件加 JKit.站点名.方法，规则 require 后调用。
-   禁止 eval 远程字符串、箭头、log、读 input。
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.6";
+JKit.ver = "20260914.7";
 
 JKit.str = function (x) {
   if (x == null) return "";
   try { return String(x); } catch (e0) { return ""; }
 };
-JKit.ver = "20260914.7";
-JKit.cf = JKit.cf || {};
-JKit.cf.on = function (html) {
-  html = JKit.str(html);
-  if (!html) return true;
-  if (html.indexOf("Just a moment") > -1) return true;
-  if (html.indexOf("cf-browser-verification") > -1) return true;
-  if (html.indexOf("banned your access") > -1) return true;
-  return false;
-};
-JKit.cf.get = function (url, opt) {
-  opt = opt || {};
-  var html = JKit.get(url, opt);
-  if (!JKit.cf.on(html)) return html;
-  try { if (typeof fetchPC === "function") html = fetchPC(url, { headers: opt.headers || {} }) || html; } catch (e0) {}
-  if (!JKit.cf.on(html)) return html;
-  try { if (typeof fetchCodeByWebView === "function") html = fetchCodeByWebView(url, { headers: opt.headers || {}, timeout: 35000 }) || html; } catch (e1) {}
-  return html;
-};
+
 JKit.abs = function (u, host) {
   u = JKit.str(u);
   host = JKit.str(host).replace(/\/$/, "");
@@ -516,6 +497,104 @@ JKit.memojav.play = function (idOrUrl) {
 
 function kitMemojavPlay(idOrUrl) {
   return JKit.memojav.play(idOrUrl);
+}
+
+
+
+/* ---------- 禁漫天堂 图片还原（对拍 mistywater jinman） ---------- */
+JKit.jm = JKit.jm || {};
+JKit.jm.scrambleId = 220980;
+JKit.jm.js = function (picUrl) {
+  picUrl = JKit.str(picUrl);
+  return $.toString(function (picUrl) {
+    try {
+      picUrl.match(/photos\/(\d+)\/(\d+)/);
+      var bookId = RegExp.$1;
+      var imgId = RegExp.$2;
+      if (!bookId || !imgId) return input;
+      var bid = Number(bookId);
+      var num = 0;
+      if (bid <= 220980) return input;
+      if (bid <= 268850) num = 10;
+      else if (bid <= 421925) num = parseInt(md5(bookId + imgId).slice(-1).charCodeAt() % 10) * 2 + 2;
+      else num = parseInt(md5(bookId + imgId).slice(-1).charCodeAt() % 8) * 2 + 2;
+      var Bitmap = android.graphics.Bitmap;
+      var BitmapFactory = android.graphics.BitmapFactory;
+      var Canvas = android.graphics.Canvas;
+      var imgBitmap = BitmapFactory.decodeStream(input);
+      try { closeMe(input); } catch (e0) {}
+      if (imgBitmap == null) return input;
+      var width = imgBitmap.getWidth();
+      var height = imgBitmap.getHeight();
+      var y = Math.floor(height / num);
+      var remainder = height % num;
+      var newImg = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+      var canvas = new Canvas(newImg);
+      var i, h;
+      for (i = 1; i <= num; i++) {
+        h = i === num ? remainder : 0;
+        canvas.drawBitmap(Bitmap.createBitmap(imgBitmap, 0, y * (i - 1), width, y + h), 0, y * (num - i), null);
+      }
+      var baos = new java.io.ByteArrayOutputStream();
+      newImg.compress(Bitmap.CompressFormat.PNG, 100, baos);
+      return new java.io.ByteArrayInputStream(baos.toByteArray());
+    } catch (e1) {
+      return input;
+    }
+  }, picUrl);
+};
+JKit.jm.wrap = function (picUrl, host) {
+  picUrl = JKit.str(picUrl);
+  host = JKit.str(host || "https://18comic.vip").replace(/\/$/, "");
+  if (!picUrl) return "";
+  return picUrl + "@Referer=" + host + "@js=" + JKit.jm.js(picUrl);
+};
+JKit.jm.pics = function (html, host) {
+  html = JKit.str(html);
+  host = JKit.str(host || "https://18comic.vip").replace(/\/$/, "");
+  var aid = "";
+  var cdn = "https://cdn-msp3.18comic.vip";
+  var am = html.match(/var\s+aid\s*=\s*['"]?(\d+)/);
+  if (am) aid = am[1];
+  var cm = html.match(/https?:\/\/cdn[^\/"']+/);
+  if (cm) cdn = cm[0];
+  var pages = [];
+  var arrM = html.match(/var\s+page_arr\s*=\s*\[([^\]]+)\]/);
+  var rm, i;
+  if (arrM) {
+    rm = arrM[1].match(/["']([^"']+)["']/g);
+    if (rm) for (i = 0; i < rm.length; i++) pages.push(rm[i].replace(/["']/g, ""));
+  }
+  if (!pages.length) {
+    var re = /data-original="(https?:\/\/[^"]+\/media\/photos\/(\d+)\/(\d+\.(?:webp|jpg|jpeg|png))[^"]*)"/gi;
+    var m, seen;
+    seen = {};
+    while ((m = re.exec(html)) !== null) {
+      if (!aid) aid = m[2];
+      if (seen[m[3]]) continue;
+      seen[m[3]] = 1;
+      pages.push(m[3]);
+    }
+  }
+  var pics = [];
+  var fn, u;
+  for (i = 0; i < pages.length; i++) {
+    fn = pages[i];
+    u = /https?:\/\//.test(fn) ? fn : (cdn + "/media/photos/" + aid + "/" + fn);
+    pics.push(JKit.jm.wrap(u, host));
+  }
+  if (!pics.length) return "toast://本章没有图片";
+  return "pics://" + pics.join("&&");
+};
+
+function kitJmJs(picUrl) {
+  return JKit.jm.js(picUrl);
+}
+function kitJmWrap(picUrl, host) {
+  return JKit.jm.wrap(picUrl, host);
+}
+function kitJmPics(html, host) {
+  return JKit.jm.pics(html, host);
 }
 
 try {
