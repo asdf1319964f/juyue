@@ -129,5 +129,5 @@ function supjavPlayJson(detailUrl, ua, ck) {
     names.push(it.name);
   }
   if (!urls.length) return String(detailUrl || '') + '#嗅探';
-  return JSON.stringify({ urls: urls, names: names });
+  return { urls: urls, names: names };
 }
