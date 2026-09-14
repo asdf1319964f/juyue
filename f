@@ -6,7 +6,7 @@
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.4";
+JKit.ver = "20260914.5";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -460,7 +460,6 @@ JKit.supjav.playJson = function (detailUrl, ua, ck) {
   var btns = JKit.supjav.buttons(html);
   var urls = [];
   var names = [];
-  var headers = [];
   var i, it, play;
   for (i = 0; i < btns.length; i++) {
     it = btns[i];
@@ -468,10 +467,9 @@ JKit.supjav.playJson = function (detailUrl, ua, ck) {
     if (!play) continue;
     urls.push(play);
     names.push(it.name);
-    headers.push({ Referer: "" });
   }
   if (!urls.length) return JKit.str(detailUrl) + "#嗅探";
-  return { urls: urls, names: names, headers: headers };
+  return { urls: urls, names: names };
 };
 
 function kitSupjavPlay(detailUrl, ua, ck) {
