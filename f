@@ -12,7 +12,25 @@ JKit.str = function (x) {
   if (x == null) return "";
   try { return String(x); } catch (e0) { return ""; }
 };
-
+JKit.ver = "20260914.7";
+JKit.cf = JKit.cf || {};
+JKit.cf.on = function (html) {
+  html = JKit.str(html);
+  if (!html) return true;
+  if (html.indexOf("Just a moment") > -1) return true;
+  if (html.indexOf("cf-browser-verification") > -1) return true;
+  if (html.indexOf("banned your access") > -1) return true;
+  return false;
+};
+JKit.cf.get = function (url, opt) {
+  opt = opt || {};
+  var html = JKit.get(url, opt);
+  if (!JKit.cf.on(html)) return html;
+  try { if (typeof fetchPC === "function") html = fetchPC(url, { headers: opt.headers || {} }) || html; } catch (e0) {}
+  if (!JKit.cf.on(html)) return html;
+  try { if (typeof fetchCodeByWebView === "function") html = fetchCodeByWebView(url, { headers: opt.headers || {}, timeout: 35000 }) || html; } catch (e1) {}
+  return html;
+};
 JKit.abs = function (u, host) {
   u = JKit.str(u);
   host = JKit.str(host).replace(/\/$/, "");
