@@ -6,7 +6,7 @@
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.2";
+JKit.ver = "20260914.3";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -458,3 +458,11 @@ JKit.supjav.playJson = function (detailUrl, ua, ck) {
   if (!urls.length) return JKit.str(detailUrl) + "#嗅探";
   return { urls: urls, names: names, headers: headers };
 };
+
+function kitSupjavPlay(detailUrl, ua, ck) {
+  return JKit.supjav.playJson(detailUrl, ua, ck);
+}
+
+try {
+  $.exports = JKit;
+} catch (eExp) {}
