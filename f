@@ -1,4 +1,4 @@
-/* Supjav 播放模块 20260914.2
+/* Supjav 播放模块 20260914.3
    给规则 require / requireCache 用，不要直接当规则跑。
    聚阅 rule/lazyRule 回调里没有 input，地址必须烘焙进参数。 */
 
@@ -111,36 +111,23 @@ function supjavResolve(dataLink, ua) {
   return '';
 }
 
-function supjavDetailPage(detailUrl, ua, ck, modPath) {
+function supjavPlayJson(detailUrl, ua, ck) {
   var html = supjavGet(detailUrl, ua, ck, 'https://supjav.com/');
-  var d = [];
-  if (!html) {
-    d.push({ title: '‘‘’’详情加载失败', url: 'hiker://empty', col_type: 'text_center_1' });
-    return d;
-  }
+  if (!html) return 'toast://详情加载失败';
   if (html.indexOf('Just a moment') > -1 || html.indexOf('请稍候') > -1) {
-    d.push({ title: '‘‘’’需要先回首页过盾', url: 'hiker://empty', col_type: 'text_center_1' });
-    return d;
+    return 'toast://需要先回首页过盾';
   }
   var btns = supjavButtons(html);
-  var i, it;
+  var urls = [];
+  var names = [];
+  var i, it, play;
   for (i = 0; i < btns.length; i++) {
     it = btns[i];
-    d.push({
-      title: '""视频""' + it.name,
-      url: $('hiker://empty').lazyRule(function (link, ua2, path) {
-        require(path);
-        var play = supjavResolve(String(link || ''), ua2);
-        if (!play) return 'toast://该线路解析失败，换一条';
-        return play;
-      }, it.link, ua, modPath)
-    });
+    play = supjavResolve(String(it.link || ''), ua);
+    if (!play) continue;
+    urls.push(play);
+    names.push(it.name);
   }
-  if (!d.length) {
-    d.push({
-      title: '""视频""嗅探',
-      url: detailUrl + '#嗅探'
-    });
-  }
-  return d;
+  if (!urls.length) return String(detailUrl || '') + '#嗅探';
+  return JSON.stringify({ urls: urls, names: names });
 }
