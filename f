@@ -1,5 +1,6 @@
-/* Supjav 播放模块 20260914.1
-   给规则 require / requireCache 用，不要直接当规则跑。 */
+/* Supjav 播放模块 20260914.2
+   给规则 require / requireCache 用，不要直接当规则跑。
+   聚阅 rule/lazyRule 回调里没有 input，地址必须烘焙进参数。 */
 
 function supjavHdr(ua, ck, ref) {
   var h = {
@@ -127,12 +128,12 @@ function supjavDetailPage(detailUrl, ua, ck, modPath) {
     it = btns[i];
     d.push({
       title: '""视频""' + it.name,
-      url: $(it.link).lazyRule(function (ua2, path) {
+      url: $('hiker://empty').lazyRule(function (link, ua2, path) {
         require(path);
-        var play = supjavResolve(input, ua2);
+        var play = supjavResolve(String(link || ''), ua2);
         if (!play) return 'toast://该线路解析失败，换一条';
         return play;
-      }, ua, modPath)
+      }, it.link, ua, modPath)
     });
   }
   if (!d.length) {
