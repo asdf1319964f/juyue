@@ -5,7 +5,7 @@
 */
 
 var JKit = JKit || {};
-JKit.ver = "20260914.7";
+JKit.ver = "20260914.8";
 
 JKit.str = function (x) {
   if (x == null) return "";
@@ -56,6 +56,57 @@ JKit.sbR = function (d, c) {
 };
 JKit.ss = function (d, c) {
   return "‘‘’’<strong><small><font color=#" + JKit.hex(c) + ">" + JKit.str(d) + "</font></small></strong>";
+};
+
+/* 聚阅官方二级槽位：封面左 + detail1/2 右 + 标签 + 相关
+   必须带 ‘‘’’ 前缀，详情栏才会认颜色
+   type: 漫画走 解析/pics:// ；小说走 解析/rich_text ；视频走 lazyRule */
+JKit.ui = JKit.ui || {};
+JKit.ui.palette = ["#ff7a00", "#e76587", "#5b8def", "#7b6cff", "#f0a202", "#2bb673"];
+JKit.ui.chip = function (title, url, bg) {
+  return {
+    title: JKit.color(JKit.str(title), "ffffff"),
+    url: url || "hiker://empty",
+    col_type: "flex_button",
+    extra: { backgroundColor: bg || "#e76587" }
+  };
+};
+JKit.ui.chips = function (arr) {
+  var d = [];
+  var i, it, bg;
+  arr = arr || [];
+  for (i = 0; i < arr.length; i++) {
+    it = arr[i];
+    if (!it) continue;
+    bg = it.bg || JKit.ui.palette[i % JKit.ui.palette.length];
+    d.push(JKit.ui.chip(it.title, it.url, bg));
+  }
+  if (d.length) d.push({ col_type: "blank_block" });
+  return d;
+};
+JKit.ui.related = function (title, list) {
+  var d = [];
+  var i;
+  list = list || [];
+  if (!list.length) return d;
+  d.push({ col_type: "line" });
+  d.push({ title: JKit.color(title || "相关", "ff7a00"), col_type: "rich_text" });
+  for (i = 0; i < list.length; i++) d.push(list[i]);
+  return d;
+};
+JKit.ui.comic = function (opt) {
+  opt = opt || {};
+  return {
+    detail1: JKit.ss(opt.detail1 || "", opt.c1 || "CC3366"),
+    detail2: JKit.color(opt.detail2 || "", opt.c2 || "006699"),
+    desc: JKit.smallR(opt.desc ? ("　　" + opt.desc) : "", opt.c3 || "CC7799"),
+    img: opt.img || "",
+    list: opt.list || [],
+    type: opt.type || "漫画",
+    rule: opt.rule == null ? 0 : opt.rule,
+    moreitems: opt.moreitems || [],
+    extenditems: opt.extenditems || []
+  };
 };
 
 JKit.circled = function (index) {
